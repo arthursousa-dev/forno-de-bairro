@@ -1,0 +1,20 @@
+# Ambiente
+.env
+.env.local
+
+# Dependências (caso futuramente adotado Composer/NPM)
+/vendor/
+/node_modules/
+
+# Uploads de usuários (mantém a pasta, ignora o conteúdo)
+/public/uploads/produtos/*
+!/public/uploads/produtos/.gitkeep
+
+# Logs
+*.log
+
+# Arquivos de IDE / SO
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

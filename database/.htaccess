@@ -1,0 +1,11 @@
+# Scripts SQL: nunca devem ser servidos diretamente via HTTP.
+# Esta pasta só deve ser acessada via linha de comando (mysql < schema.sql)
+# ou ferramenta administrativa de banco de dados.
+
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>
