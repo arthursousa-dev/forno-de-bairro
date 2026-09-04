@@ -1,0 +1,12 @@
+# Camada de aplicação: nunca deve ser servida diretamente via HTTP.
+# Esta pasta só deve ser acessada por include/require do PHP.
+# (Redundante caso o DocumentRoot do Apache já aponte para /public,
+# mas mantido como defesa em profundidade.)
+
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>
