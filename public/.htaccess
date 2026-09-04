@@ -1,0 +1,29 @@
+# public/.htaccess
+# Configurações de segurança do document root (Apache 2.4+).
+
+# Desativa a listagem de diretórios.
+Options -Indexes
+
+# Bloqueia o acesso direto a arquivos de configuração/versionamento
+# que eventualmente sejam copiados para dentro do document root.
+<FilesMatch "(^\.env|\.sql|\.log|composer\.(json|lock))$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Cabeçalhos básicos de segurança.
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# PHP só deve ser executado dentro de public/ e public/admin/.
+<IfModule mod_php8.c>
+    php_flag display_errors off
+</IfModule>

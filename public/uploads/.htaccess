@@ -1,0 +1,20 @@
+# Diretório de uploads de imagens: deve servir apenas arquivos estáticos.
+# Impede que um arquivo malicioso enviado disfarçado de imagem seja
+# executado como script PHP pelo servidor.
+
+<IfModule mod_php7.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php8.c>
+    php_flag engine off
+</IfModule>
+
+<FilesMatch "\.(php|phtml|php\d?)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
