@@ -34,6 +34,8 @@ public/                    # document root
 
 - **PDO com prepared statements** em toda operação que recebe input do usuário; as poucas chamadas `->query()` diretas são exclusivamente `SELECT`s estáticos, sem interpolação de variável.
 - **Senha em bcrypt** (`password_hash`/`password_verify`), nunca texto puro.
+- **Bloqueio de conta** após 5 tentativas de login incorretas seguidas (15 minutos), compartilhado entre o login do cliente e o do admin.
+- **Cookies de sessão** com `httponly`, `samesite=Lax` e `secure` (quando em HTTPS).
 - **CSRF** em todo formulário que altera estado (cadastro, login, contato, checkout, CRUD do admin), token validado com `hash_equals()`.
 - **Upload de imagem validado por MIME real** (via `finfo`), não pela extensão do arquivo — evita que um `.php` disfarçado de `.jpg` seja aceito.
 - **Configuração por variável de ambiente**, com fallback local — nenhuma credencial de produção fica hardcoded.
