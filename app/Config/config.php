@@ -16,13 +16,13 @@ if (!defined('APP_ENV')) {
     define('APP_BASE_URL', getenv('APP_BASE_URL') ?: '/');
 
     // ---- Banco de dados ----
-    define('DB_DRIVER', 'mysql');
+    define('DB_DRIVER', 'pgsql');
     define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
-    define('DB_PORT', getenv('DB_PORT') ?: '3306');
+    define('DB_PORT', getenv('DB_PORT') ?: '5432');
     define('DB_NAME', getenv('DB_NAME') ?: 'forno_do_bairro');
-    define('DB_USER', getenv('DB_USER') ?: 'root');
+    define('DB_USER', getenv('DB_USER') ?: 'postgres');
     define('DB_PASS', getenv('DB_PASS') ?: '');
-    define('DB_CHARSET', 'utf8mb4');
+    define('DB_CHARSET', 'utf8');
 
     // ---- Sessão / segurança ----
     define('SESSION_NAME', 'forno_session');

@@ -2,7 +2,7 @@
 /**
  * app/Config/Database.php
  *
- * Encapsula a conexão PDO com o MySQL em um Singleton, evitando múltiplas
+ * Encapsula a conexão PDO com o PostgreSQL em um Singleton, evitando múltiplas
  * conexões abertas durante o mesmo ciclo de requisição.
  */
 
@@ -32,12 +32,11 @@ final class Database
         }
 
         $dsn = sprintf(
-            '%s:host=%s;port=%s;dbname=%s;charset=%s',
+            '%s:host=%s;port=%s;dbname=%s',
             DB_DRIVER,
             DB_HOST,
             DB_PORT,
-            DB_NAME,
-            DB_CHARSET
+            DB_NAME
         );
 
         $opcoes = [
