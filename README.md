@@ -19,8 +19,9 @@ app/
 └── bootstrap.php          # ponto único de inicialização
 
 database/
-└── schema.sql             # DDL completo (usuarios, categorias, produtos,
-                            #   pedidos, itens_pedido, contatos)
+├── schema.sql             # DDL completo (usuarios, categorias, produtos,
+│                          #   pedidos, pedido_itens, contatos)
+└── seed.sql               # dados de demonstração
 
 public/                    # document root
 ├── index.php, produtos.php, sobre.php, contato.php
@@ -32,7 +33,7 @@ public/                    # document root
 
 ## Decisões técnicas
 
-- **PDO com prepared statements** em toda operação que recebe input do usuário; as poucas chamadas `->query()` diretas são exclusivamente `SELECT`s estáticos, sem interpolação de variável.
+- **PDO com prepared statements** em toda operação que recebe input do usuário, contra **PostgreSQL**; as poucas chamadas `->query()` diretas são exclusivamente `SELECT`s estáticos, sem interpolação de variável.
 - **Senha em bcrypt** (`password_hash`/`password_verify`), nunca texto puro.
 - **Bloqueio de conta** após 5 tentativas de login incorretas seguidas (15 minutos), compartilhado entre o login do cliente e o do admin.
 - **Cookies de sessão** com `httponly`, `samesite=Lax` e `secure` (quando em HTTPS).
@@ -44,16 +45,15 @@ public/                    # document root
 
 ## Como rodar localmente
 
-1. Crie o banco a partir do schema:
+1. Crie o banco a partir do schema e do seed:
    ```bash
-   mysql -u root -p < database/schema.sql
+   createdb forno_do_bairro
+   psql forno_do_bairro < database/schema.sql
+   psql forno_do_bairro < database/seed.sql
    ```
-2. Configure as variáveis de ambiente (ou ajuste os defaults em `app/Config/config.php` para desenvolvimento local):
+2. Configure as variáveis de ambiente:
    ```bash
-   export DB_HOST=localhost
-   export DB_NAME=forno_do_bairro
-   export DB_USER=root
-   export DB_PASS=
+   cp .env.example .env
    ```
 3. Suba o servidor embutido do PHP a partir de `public/`:
    ```bash
