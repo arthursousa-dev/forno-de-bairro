@@ -57,7 +57,7 @@ function autenticar(PDO $pdo, string $email, string $senha, ?string $tipoEsperad
     }
     if (!password_verify($senha, $u['senha_hash'])) {
         $tentativas = (int)$u['tentativas_login'] + 1;
-        $bloqueio = $tentativas >= 5 ? "DATE_ADD(NOW(), INTERVAL 15 MINUTE)" : 'NULL';
+        $bloqueio = $tentativas >= 5 ? "now() + interval '15 minutes'" : 'NULL';
         $pdo->prepare("UPDATE usuarios SET tentativas_login = ?, bloqueado_ate = {$bloqueio} WHERE id = ?")
             ->execute([$tentativas, $u['id']]);
         return null;
