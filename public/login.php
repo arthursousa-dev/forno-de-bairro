@@ -36,12 +36,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (!$erros) {
         try {
-            $pdo = conectar();
-            $stmt = $pdo->prepare('SELECT id, nome, senha_hash, tipo, ativo FROM usuarios WHERE email = :email');
-            $stmt->execute([':email' => $emailValor]);
-            $usuario = $stmt->fetch();
+            $usuario = autenticar(conectar(), $emailValor, $senha);
 
-            if (!$usuario || !password_verify($senha, $usuario['senha_hash'])) {
+            if (!$usuario) {
                 $erros[] = 'E-mail ou senha incorretos.';
             } elseif (!$usuario['ativo']) {
                 $erros[] = 'Esta conta está desativada. Entre em contato com o suporte.';

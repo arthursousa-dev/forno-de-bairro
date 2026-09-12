@@ -15,15 +15,17 @@ USE forno_do_bairro;
 -- Armazena clientes e administradores
 -- ---------------------------------------------------------------------
 CREATE TABLE usuarios (
-    id            INT AUTO_INCREMENT PRIMARY KEY,
-    nome          VARCHAR(120)        NOT NULL,
-    email         VARCHAR(150)        NOT NULL UNIQUE,
-    senha_hash    VARCHAR(255)        NOT NULL,
-    telefone      VARCHAR(20)         NULL,
-    endereco      VARCHAR(255)        NULL,
-    tipo          ENUM('cliente','admin') NOT NULL DEFAULT 'cliente',
-    ativo         TINYINT(1)          NOT NULL DEFAULT 1,
-    criado_em     DATETIME            NOT NULL DEFAULT CURRENT_TIMESTAMP
+    id                INT AUTO_INCREMENT PRIMARY KEY,
+    nome              VARCHAR(120)        NOT NULL,
+    email             VARCHAR(150)        NOT NULL UNIQUE,
+    senha_hash        VARCHAR(255)        NOT NULL,
+    telefone          VARCHAR(20)         NULL,
+    endereco          VARCHAR(255)        NULL,
+    tipo              ENUM('cliente','admin') NOT NULL DEFAULT 'cliente',
+    ativo             TINYINT(1)          NOT NULL DEFAULT 1,
+    tentativas_login  TINYINT UNSIGNED    NOT NULL DEFAULT 0,
+    bloqueado_ate     DATETIME            NULL,
+    criado_em         DATETIME            NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------

@@ -35,6 +35,38 @@ function formatarData(string $dataHora, string $formato = 'd/m/Y \à\s H:i'): st
     return $dt ? date_format($dt, $formato) : $dataHora;
 }
 
+/**
+ * Autentica um usuário por e-mail/senha, com bloqueio de 15 minutos
+ * após 5 tentativas incorretas seguidas. Retorna a linha do usuário
+ * em caso de sucesso, ou null (credenciais inválidas ou bloqueado).
+ */
+function autenticar(PDO $pdo, string $email, string $senha, ?string $tipoEsperado = null): ?array
+{
+    $sql = 'SELECT * FROM usuarios WHERE email = :email' . ($tipoEsperado ? ' AND tipo = :tipo' : '');
+    $stmt = $pdo->prepare($sql);
+    $params = [':email' => $email];
+    if ($tipoEsperado) $params[':tipo'] = $tipoEsperado;
+    $stmt->execute($params);
+    $u = $stmt->fetch();
+
+    if (!$u) {
+        return null;
+    }
+    if ($u['bloqueado_ate'] && strtotime($u['bloqueado_ate']) > time()) {
+        return null;
+    }
+    if (!password_verify($senha, $u['senha_hash'])) {
+        $tentativas = (int)$u['tentativas_login'] + 1;
+        $bloqueio = $tentativas >= 5 ? "DATE_ADD(NOW(), INTERVAL 15 MINUTE)" : 'NULL';
+        $pdo->prepare("UPDATE usuarios SET tentativas_login = ?, bloqueado_ate = {$bloqueio} WHERE id = ?")
+            ->execute([$tentativas, $u['id']]);
+        return null;
+    }
+
+    $pdo->prepare('UPDATE usuarios SET tentativas_login = 0, bloqueado_ate = NULL WHERE id = ?')->execute([$u['id']]);
+    return $u;
+}
+
 /** Verifica se existe um usuário autenticado na sessão. */
 function estaLogado(): bool
 {

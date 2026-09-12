@@ -31,12 +31,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (!$erros) {
         try {
-            $pdo  = conectar();
-            $stmt = $pdo->prepare('SELECT id, nome, senha_hash, tipo, ativo FROM usuarios WHERE email = :email AND tipo = "admin"');
-            $stmt->execute([':email' => $emailValor]);
-            $admin = $stmt->fetch();
+            $admin = autenticar(conectar(), $emailValor, $senha, 'admin');
 
-            if (!$admin || !password_verify($senha, $admin['senha_hash'])) {
+            if (!$admin) {
                 $erros[] = 'Credenciais inválidas para o painel administrativo.';
             } elseif (!$admin['ativo']) {
                 $erros[] = 'Esta conta de administrador está desativada.';
