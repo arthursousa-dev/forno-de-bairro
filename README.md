@@ -64,8 +64,19 @@ public/                    # document root
 ## Roadmap
 
 - [ ] Migrar para um framework leve (Slim ou similar) conforme o projeto cresce
-- [ ] Testes automatizados para o fluxo de checkout
-- [ ] Paginação nas listagens do admin
+- [x] Testes automatizados para o fluxo de checkout
+- [x] Paginação nas listagens do admin
+
+## Testes
+
+```bash
+composer install
+createdb forno_do_bairro_test
+psql forno_do_bairro_test < database/schema.sql
+DB_NAME=forno_do_bairro_test vendor/bin/phpunit
+```
+
+> Uma auditoria durante essa etapa encontrou e corrigiu comparações booleanas (`disponivel = 1`) e uma string entre aspas duplas num INSERT que tinham sobrado da migração de MySQL para PostgreSQL — a segunda quebrava todo pedido novo no checkout.
 
 ---
 
