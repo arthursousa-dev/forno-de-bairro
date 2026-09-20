@@ -9,15 +9,18 @@ $tituloPagina = 'Produtos';
 $paginaAdminAtual = 'produtos';
 
 $pdo = conectar();
+$totalProdutos = (int) $pdo->query('SELECT COUNT(*) FROM produtos')->fetchColumn();
+$pag = metaPaginacao($totalProdutos);
 $produtos = $pdo->query("SELECT p.*, c.nome AS categoria_nome FROM produtos p
                           JOIN categorias c ON c.id = p.categoria_id
-                          ORDER BY c.id, p.nome")->fetchAll();
+                          ORDER BY c.id, p.nome
+                          LIMIT {$pag['limite']} OFFSET {$pag['offset']}")->fetchAll();
 
 include __DIR__ . '/../../app/Views/admin/header.php';
 ?>
 
 <div class="flex-between" style="margin-bottom: 18px;">
-  <h3 style="text-transform:none;">Cardápio (<?= count($produtos) ?>)</h3>
+  <h3 style="text-transform:none;">Cardápio (<?= $totalProdutos ?>)</h3>
   <a href="/admin/produto-form.php" class="btn btn-primary btn-sm">+ Novo produto</a>
 </div>
 
@@ -59,6 +62,7 @@ include __DIR__ . '/../../app/Views/admin/header.php';
       </tbody>
     </table>
   <?php endif; ?>
+  <?= controlesPaginacao($pag) ?>
 </div>
 
 <?php include __DIR__ . '/../../app/Views/admin/footer.php'; ?>

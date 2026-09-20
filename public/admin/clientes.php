@@ -9,16 +9,19 @@ $tituloPagina = 'Clientes';
 $paginaAdminAtual = 'clientes';
 
 $pdo = conectar();
+$totalClientes = (int) $pdo->query("SELECT COUNT(*) FROM usuarios WHERE tipo = 'cliente'")->fetchColumn();
+$pag = metaPaginacao($totalClientes);
 $clientes = $pdo->query("SELECT u.*,
                           (SELECT COUNT(*) FROM pedidos p WHERE p.usuario_id = u.id) AS total_pedidos,
                           (SELECT COALESCE(SUM(total),0) FROM pedidos p WHERE p.usuario_id = u.id AND p.status != 'cancelado') AS total_gasto
-                          FROM usuarios u WHERE u.tipo = 'cliente' ORDER BY u.criado_em DESC")->fetchAll();
+                          FROM usuarios u WHERE u.tipo = 'cliente' ORDER BY u.criado_em DESC
+                          LIMIT {$pag['limite']} OFFSET {$pag['offset']}")->fetchAll();
 
 include __DIR__ . '/../../app/Views/admin/header.php';
 ?>
 
 <div class="flex-between" style="margin-bottom: 18px;">
-  <h3 style="text-transform:none;">Clientes cadastrados (<?= count($clientes) ?>)</h3>
+  <h3 style="text-transform:none;">Clientes cadastrados (<?= $totalClientes ?>)</h3>
 </div>
 
 <div class="table-card">
@@ -45,6 +48,7 @@ include __DIR__ . '/../../app/Views/admin/header.php';
       </tbody>
     </table>
   <?php endif; ?>
+  <?= controlesPaginacao($pag) ?>
 </div>
 
 <?php include __DIR__ . '/../../app/Views/admin/footer.php'; ?>

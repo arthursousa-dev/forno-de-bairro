@@ -9,7 +9,7 @@ $pdo = conectar();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['marcar_respondido'])) {
     if (validarCSRF($_POST['csrf_token'] ?? null)) {
-        $upd = $pdo->prepare('UPDATE contatos SET respondido = 1 WHERE id = :id');
+        $upd = $pdo->prepare('UPDATE contatos SET respondido = true WHERE id = :id');
         $upd->execute([':id' => (int)$_POST['marcar_respondido']]);
         definirFlash('success', 'Mensagem marcada como respondida.');
     }
@@ -20,13 +20,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['marcar_respondido']))
 $tituloPagina = 'Mensagens de contato';
 $paginaAdminAtual = 'contatos';
 
-$mensagens = $pdo->query('SELECT * FROM contatos ORDER BY respondido ASC, criado_em DESC')->fetchAll();
+$totalMensagens = (int) $pdo->query('SELECT COUNT(*) FROM contatos')->fetchColumn();
+$pag = metaPaginacao($totalMensagens);
+$mensagens = $pdo->query("SELECT * FROM contatos ORDER BY respondido ASC, criado_em DESC
+                           LIMIT {$pag['limite']} OFFSET {$pag['offset']}")->fetchAll();
 
 include __DIR__ . '/../../app/Views/admin/header.php';
 ?>
 
 <div class="flex-between" style="margin-bottom: 18px;">
-  <h3 style="text-transform:none;">Mensagens recebidas (<?= count($mensagens) ?>)</h3>
+  <h3 style="text-transform:none;">Mensagens recebidas (<?= $totalMensagens ?>)</h3>
 </div>
 
 <?php if (!$mensagens): ?>
@@ -56,5 +59,6 @@ include __DIR__ . '/../../app/Views/admin/header.php';
     </div>
   <?php endforeach; ?>
 <?php endif; ?>
+<?= controlesPaginacao($pag) ?>
 
 <?php include __DIR__ . '/../../app/Views/admin/footer.php'; ?>

@@ -15,13 +15,20 @@ $statusValidos = ['pendente', 'preparo', 'saiu_entrega', 'entregue', 'cancelado'
 
 $sql = "SELECT p.*, u.nome AS cliente_nome, u.telefone AS cliente_telefone
         FROM pedidos p JOIN usuarios u ON u.id = p.usuario_id";
+$sqlCount = 'SELECT COUNT(*) FROM pedidos p';
 $params = [];
 
 if (in_array($statusFiltro, $statusValidos, true)) {
     $sql .= ' WHERE p.status = :status';
+    $sqlCount .= ' WHERE p.status = :status';
     $params[':status'] = $statusFiltro;
 }
-$sql .= ' ORDER BY p.criado_em DESC';
+
+$stmtCount = $pdo->prepare($sqlCount);
+$stmtCount->execute($params);
+$pag = metaPaginacao((int) $stmtCount->fetchColumn());
+
+$sql .= " ORDER BY p.criado_em DESC LIMIT {$pag['limite']} OFFSET {$pag['offset']}";
 
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
@@ -69,6 +76,7 @@ include __DIR__ . '/../../app/Views/admin/header.php';
       </tbody>
     </table>
   <?php endif; ?>
+  <?= controlesPaginacao($pag) ?>
 </div>
 
 <?php include __DIR__ . '/../../app/Views/admin/footer.php'; ?>
