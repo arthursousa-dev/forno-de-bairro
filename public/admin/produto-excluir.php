@@ -31,7 +31,7 @@ try {
         $stmtCheck->execute([':id' => $id]);
 
         if ((int)$stmtCheck->fetchColumn() > 0) {
-            $upd = $pdo->prepare('UPDATE produtos SET disponivel = 0 WHERE id = :id');
+            $upd = $pdo->prepare('UPDATE produtos SET disponivel = false WHERE id = :id');
             $upd->execute([':id' => $id]);
             definirFlash('info', 'Este produto já possui pedidos registrados e não pode ser excluído — ele foi marcado como indisponível.');
         } else {

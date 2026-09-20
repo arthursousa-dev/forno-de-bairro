@@ -12,7 +12,7 @@ try {
     $categorias = $pdo->query("SELECT * FROM categorias ORDER BY id")->fetchAll();
     $produtos   = $pdo->query("SELECT p.*, c.slug AS categoria_slug, c.nome AS categoria_nome
                                 FROM produtos p JOIN categorias c ON c.id = p.categoria_id
-                                WHERE p.disponivel = 1
+                                WHERE p.disponivel = true
                                 ORDER BY c.id, p.nome")->fetchAll();
 } catch (Throwable $e) {
     $erroBanco = true;

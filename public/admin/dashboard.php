@@ -23,8 +23,8 @@ $totalFaturamentoMes = (float)$faturamentoMes->fetchColumn();
 
 $pedidosPendentes = (int)$pdo->query("SELECT COUNT(*) FROM pedidos WHERE status IN ('pendente','preparo','saiu_entrega')")->fetchColumn();
 $totalClientes     = (int)$pdo->query("SELECT COUNT(*) FROM usuarios WHERE tipo = 'cliente'")->fetchColumn();
-$totalProdutos      = (int)$pdo->query("SELECT COUNT(*) FROM produtos WHERE disponivel = 1")->fetchColumn();
-$mensagensNaoLidas  = (int)$pdo->query("SELECT COUNT(*) FROM contatos WHERE respondido = 0")->fetchColumn();
+$totalProdutos      = (int)$pdo->query("SELECT COUNT(*) FROM produtos WHERE disponivel = true")->fetchColumn();
+$mensagensNaoLidas  = (int)$pdo->query("SELECT COUNT(*) FROM contatos WHERE respondido = false")->fetchColumn();
 
 $recentes = $pdo->query("SELECT p.*, u.nome AS cliente_nome FROM pedidos p
                           JOIN usuarios u ON u.id = p.usuario_id

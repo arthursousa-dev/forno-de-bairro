@@ -10,7 +10,7 @@ try {
     $pdo = conectar();
     $stmt = $pdo->query("SELECT p.*, c.nome AS categoria_nome FROM produtos p
                           JOIN categorias c ON c.id = p.categoria_id
-                          WHERE p.disponivel = 1 AND c.slug = 'pizzas-salgadas'
+                          WHERE p.disponivel = true AND c.slug = 'pizzas-salgadas'
                           ORDER BY p.id LIMIT 4");
     $destaques = $stmt->fetchAll();
 } catch (Throwable $e) {
