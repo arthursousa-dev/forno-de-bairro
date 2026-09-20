@@ -224,3 +224,132 @@ function removerImagemProduto(?string $imagem): void
         @unlink($caminho);
     }
 }
+
+/**
+ * Cria um pedido a partir do carrinho: valida, recalcula os preços
+ * a partir do banco (nunca confia no valor enviado pelo cliente),
+ * grava pedido + itens numa transação. Extraída de public/pedido.php
+ * pra poder ser testada isoladamente, sem depender de $_POST/$_SESSION.
+ *
+ * @return array{sucesso: bool, erro: ?string, pedido_id: ?int, total: ?float}
+ */
+function criarPedido(PDO $pdo, int $usuarioId, string $endereco, string $formaPagamento, ?string $observacoes, array $itensCarrinho): array
+{
+    if (mb_strlen($endereco) < 8) {
+        return ['sucesso' => false, 'erro' => 'Informe um endereço de entrega completo.', 'pedido_id' => null, 'total' => null];
+    }
+    if (!in_array($formaPagamento, ['dinheiro', 'cartao', 'pix'], true)) {
+        return ['sucesso' => false, 'erro' => 'Selecione uma forma de pagamento.', 'pedido_id' => null, 'total' => null];
+    }
+    if (count($itensCarrinho) === 0) {
+        return ['sucesso' => false, 'erro' => 'Seu carrinho está vazio. Adicione itens antes de finalizar o pedido.', 'pedido_id' => null, 'total' => null];
+    }
+
+    try {
+        $idsValidados = array_map(fn($i) => (int) $i['id'], $itensCarrinho);
+        $placeholders = implode(',', array_fill(0, count($idsValidados), '?'));
+        $stmtProd = $pdo->prepare("SELECT id, nome, preco FROM produtos WHERE id IN ($placeholders) AND disponivel = true");
+        $stmtProd->execute($idsValidados);
+        $produtosBanco = [];
+        foreach ($stmtProd->fetchAll() as $row) {
+            $produtosBanco[$row['id']] = $row;
+        }
+
+        $itensFinais = [];
+        $total = 0;
+        foreach ($itensCarrinho as $item) {
+            $id  = (int) $item['id'];
+            $qtd = max(1, min(50, (int) $item['quantidade']));
+            if (!isset($produtosBanco[$id])) continue;
+            $preco = (float) $produtosBanco[$id]['preco'];
+            $subtotal = $preco * $qtd;
+            $total += $subtotal;
+            $itensFinais[] = ['produto_id' => $id, 'quantidade' => $qtd, 'preco' => $preco, 'subtotal' => $subtotal];
+        }
+
+        if (!$itensFinais) {
+            return ['sucesso' => false, 'erro' => 'Não foi possível validar os itens do carrinho. Tente novamente.', 'pedido_id' => null, 'total' => null];
+        }
+
+        $pdo->beginTransaction();
+
+        $stmtPedido = $pdo->prepare("INSERT INTO pedidos (usuario_id, status, endereco_entrega, forma_pagamento, observacoes, total)
+                                      VALUES (:usuario_id, 'pendente', :endereco, :pagamento, :obs, :total)");
+        $stmtPedido->execute([
+            ':usuario_id' => $usuarioId,
+            ':endereco'   => $endereco,
+            ':pagamento'  => $formaPagamento,
+            ':obs'        => $observacoes ?: null,
+            ':total'      => $total,
+        ]);
+        $pedidoId = (int) $pdo->lastInsertId();
+
+        $stmtItem = $pdo->prepare('INSERT INTO pedido_itens (pedido_id, produto_id, quantidade, preco_unitario, subtotal)
+                                    VALUES (:pedido_id, :produto_id, :quantidade, :preco, :subtotal)');
+        foreach ($itensFinais as $item) {
+            $stmtItem->execute([
+                ':pedido_id'  => $pedidoId,
+                ':produto_id' => $item['produto_id'],
+                ':quantidade' => $item['quantidade'],
+                ':preco'      => $item['preco'],
+                ':subtotal'   => $item['subtotal'],
+            ]);
+        }
+
+        $pdo->commit();
+
+        return ['sucesso' => true, 'erro' => null, 'pedido_id' => $pedidoId, 'total' => $total];
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        return ['sucesso' => false, 'erro' => 'Não foi possível registrar seu pedido agora. Tente novamente.', 'pedido_id' => null, 'total' => null];
+    }
+}
+
+/**
+ * Calcula os metadados de paginação a partir de $_GET['pagina'] e do
+ * total de itens (uma query COUNT separada) — para usar direto num
+ * LIMIT/OFFSET na query principal.
+ */
+function metaPaginacao(int $totalItens, int $porPagina = 15): array
+{
+    $totalPaginas = max(1, (int) ceil($totalItens / $porPagina));
+    $paginaAtual  = max(1, min($totalPaginas, (int) ($_GET['pagina'] ?? 1)));
+
+    return [
+        'pagina_atual'  => $paginaAtual,
+        'total_paginas' => $totalPaginas,
+        'offset'        => ($paginaAtual - 1) * $porPagina,
+        'limite'        => $porPagina,
+        'total_itens'   => $totalItens,
+    ];
+}
+
+/**
+ * Desenha os controles de paginação, preservando os filtros já
+ * aplicados na querystring.
+ */
+function controlesPaginacao(array $meta): string
+{
+    if ($meta['total_paginas'] <= 1) {
+        return '';
+    }
+
+    $paramsBase = $_GET;
+    unset($paramsBase['pagina']);
+    $linkPara = fn($p) => '?' . http_build_query(array_merge($paramsBase, ['pagina' => $p]));
+
+    $atual = $meta['pagina_atual'];
+    $totalPag = $meta['total_paginas'];
+
+    $html = '<nav class="paginacao" aria-label="Navegação de páginas" style="display:flex;gap:6px;align-items:center;justify-content:center;margin-top:16px;flex-wrap:wrap">';
+    $html .= $atual > 1 ? '<a href="' . $linkPara($atual - 1) . '">‹ Anterior</a>' : '<span style="opacity:.4">‹ Anterior</span>';
+    for ($p = 1; $p <= $totalPag; $p++) {
+        $html .= $p === $atual
+            ? '<span aria-current="page" style="padding:6px 12px;font-weight:700">' . $p . '</span>'
+            : '<a href="' . $linkPara($p) . '" style="padding:6px 12px">' . $p . '</a>';
+    }
+    $html .= $atual < $totalPag ? '<a href="' . $linkPara($atual + 1) . '">Próxima ›</a>' : '<span style="opacity:.4">Próxima ›</span>';
+    $html .= '</nav>';
+
+    return $html;
+}

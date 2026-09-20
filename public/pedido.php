@@ -43,67 +43,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (!$erros) {
-        try {
-            // Nunca confiar no preço enviado pelo cliente: recalcula a partir do banco.
-            $idsValidados = array_map(fn($i) => (int)$i['id'], $itensCarrinho);
-            $placeholders = implode(',', array_fill(0, count($idsValidados), '?'));
-            $stmtProd = $pdo->prepare("SELECT id, nome, preco FROM produtos WHERE id IN ($placeholders) AND disponivel = 1");
-            $stmtProd->execute($idsValidados);
-            $produtosBanco = [];
-            foreach ($stmtProd->fetchAll() as $row) {
-                $produtosBanco[$row['id']] = $row;
-            }
+        $resultado = criarPedido($pdo, (int) $_SESSION['usuario_id'], $enderecoValor, $formaPagamento, $observacoes, $itensCarrinho);
 
-            $itensFinais = [];
-            $total = 0;
-            foreach ($itensCarrinho as $item) {
-                $id  = (int)$item['id'];
-                $qtd = max(1, min(50, (int)$item['quantidade']));
-                if (!isset($produtosBanco[$id])) continue;
-                $preco = (float)$produtosBanco[$id]['preco'];
-                $subtotal = $preco * $qtd;
-                $total += $subtotal;
-                $itensFinais[] = ['produto_id' => $id, 'quantidade' => $qtd, 'preco' => $preco, 'subtotal' => $subtotal];
-            }
-
-            if (!$itensFinais) {
-                $erros[] = 'Não foi possível validar os itens do carrinho. Tente novamente.';
-            } else {
-                $pdo->beginTransaction();
-
-                $stmtPedido = $pdo->prepare('INSERT INTO pedidos (usuario_id, status, endereco_entrega, forma_pagamento, observacoes, total)
-                                              VALUES (:usuario_id, "pendente", :endereco, :pagamento, :obs, :total)');
-                $stmtPedido->execute([
-                    ':usuario_id' => $_SESSION['usuario_id'],
-                    ':endereco'   => $enderecoValor,
-                    ':pagamento'  => $formaPagamento,
-                    ':obs'        => $observacoes ?: null,
-                    ':total'      => $total,
-                ]);
-                $pedidoId = (int)$pdo->lastInsertId();
-
-                $stmtItem = $pdo->prepare('INSERT INTO pedido_itens (pedido_id, produto_id, quantidade, preco_unitario, subtotal)
-                                            VALUES (:pedido_id, :produto_id, :quantidade, :preco, :subtotal)');
-                foreach ($itensFinais as $item) {
-                    $stmtItem->execute([
-                        ':pedido_id'  => $pedidoId,
-                        ':produto_id' => $item['produto_id'],
-                        ':quantidade' => $item['quantidade'],
-                        ':preco'      => $item['preco'],
-                        ':subtotal'   => $item['subtotal'],
-                    ]);
-                }
-
-                $pdo->commit();
-
-                definirFlash('success', 'Pedido #' . $pedidoId . ' realizado com sucesso! Acompanhe o status abaixo.');
-                header('Location: /meus-pedidos.php?novo=1');
-                exit;
-            }
-        } catch (Throwable $e) {
-            if ($pdo->inTransaction()) $pdo->rollBack();
-            $erros[] = 'Não foi possível registrar seu pedido agora. Tente novamente.';
+        if ($resultado['sucesso']) {
+            definirFlash('success', 'Pedido #' . $resultado['pedido_id'] . ' realizado com sucesso! Acompanhe o status abaixo.');
+            header('Location: /meus-pedidos.php?novo=1');
+            exit;
         }
+
+        $erros[] = $resultado['erro'];
     }
 }
 
@@ -112,7 +60,7 @@ $produtos = [];
 try {
     $produtos = $pdo->query("SELECT p.*, c.nome AS categoria_nome FROM produtos p
                               JOIN categorias c ON c.id = p.categoria_id
-                              WHERE p.disponivel = 1 ORDER BY c.id, p.nome")->fetchAll();
+                              WHERE p.disponivel = true ORDER BY c.id, p.nome")->fetchAll();
 } catch (Throwable $e) {
     $produtos = [];
 }
