@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $valores['nome']     = trim($_POST['nome'] ?? '');
-    $valores['email']    = trim($_POST['email'] ?? '');
+    $valores['email']    = strtolower(trim($_POST['email'] ?? ''));
     $valores['telefone'] = trim($_POST['telefone'] ?? '');
     $valores['endereco'] = trim($_POST['endereco'] ?? '');
     $senha               = (string)($_POST['senha'] ?? '');
@@ -48,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $pdo = conectar();
 
-            $verifica = $pdo->prepare('SELECT id FROM usuarios WHERE email = :email');
+            $verifica = $pdo->prepare('SELECT id FROM usuarios WHERE lower(email) = :email');
             $verifica->execute([':email' => $valores['email']]);
             if ($verifica->fetch()) {
                 $erros[] = 'Este e-mail já está cadastrado. Tente fazer login.';

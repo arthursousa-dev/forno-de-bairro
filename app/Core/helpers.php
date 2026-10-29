@@ -42,7 +42,8 @@ function formatarData(string $dataHora, string $formato = 'd/m/Y \à\s H:i'): st
  */
 function autenticar(PDO $pdo, string $email, string $senha, ?string $tipoEsperado = null): ?array
 {
-    $sql = 'SELECT * FROM usuarios WHERE email = :email' . ($tipoEsperado ? ' AND tipo = :tipo' : '');
+    // lower() nos dois lados: contas antigas podem ter sido gravadas com maiúsculas.
+    $sql = 'SELECT * FROM usuarios WHERE lower(email) = lower(:email)' . ($tipoEsperado ? ' AND tipo = :tipo' : '');
     $stmt = $pdo->prepare($sql);
     $params = [':email' => $email];
     if ($tipoEsperado) $params[':tipo'] = $tipoEsperado;
