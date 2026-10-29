@@ -19,3 +19,5 @@
 .DS_Store
 Thumbs.db
 composer.lock
+vendor/
+.phpunit.result.cache
