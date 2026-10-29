@@ -43,7 +43,7 @@ function formatarData(string $dataHora, string $formato = 'd/m/Y \à\s H:i'): st
 function autenticar(PDO $pdo, string $email, string $senha, ?string $tipoEsperado = null): ?array
 {
     // lower() nos dois lados: contas antigas podem ter sido gravadas com maiúsculas.
-    $sql = 'SELECT * FROM usuarios WHERE lower(email) = lower(:email)' . ($tipoEsperado ? ' AND tipo = :tipo' : '');
+    $sql = 'SELECT *, CASE WHEN bloqueado_ate > now() THEN 1 ELSE 0 END AS bloqueado FROM usuarios WHERE lower(email) = lower(:email)' . ($tipoEsperado ? ' AND tipo = :tipo' : '');
     $stmt = $pdo->prepare($sql);
     $params = [':email' => $email];
     if ($tipoEsperado) $params[':tipo'] = $tipoEsperado;
@@ -53,7 +53,8 @@ function autenticar(PDO $pdo, string $email, string $senha, ?string $tipoEsperad
     if (!$u) {
         return null;
     }
-    if ($u['bloqueado_ate'] && strtotime($u['bloqueado_ate']) > time()) {
+    // Comparado no banco: bloqueado_ate vem do now() do PostgreSQL, e strtotime() usaria o fuso do PHP.
+    if ((int) $u['bloqueado'] === 1) {
         return null;
     }
     if (!password_verify($senha, $u['senha_hash'])) {
