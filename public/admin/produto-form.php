@@ -72,15 +72,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (!$erros) {
         try {
-            $imagemFinal = $valores['imagem'] ?? null;
-
-            if ($novaImagem) {
-                removerImagemProduto($imagemFinal);
-                $imagemFinal = $novaImagem;
-            } elseif ($removerImagem) {
-                removerImagemProduto($imagemFinal);
-                $imagemFinal = null;
-            }
+            // A imagem antiga só sai do disco depois que o banco aceitar a troca;
+            // se o UPDATE falhar, o produto continua apontando para um arquivo que existe.
+            $imagemAnterior = $valores['imagem'] ?? null;
+            $imagemFinal = $novaImagem ?: ($removerImagem ? null : $imagemAnterior);
 
             if ($editando) {
                 $stmt = $pdo->prepare('UPDATE produtos SET categoria_id=:cat, nome=:nome, descricao=:desc,
@@ -101,10 +96,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ]);
                 definirFlash('success', 'Produto cadastrado com sucesso!');
             }
+            if ($imagemFinal !== $imagemAnterior) {
+                removerImagemProduto($imagemAnterior);
+            }
 
             header('Location: /admin/produtos.php');
             exit;
         } catch (Throwable $e) {
+            removerImagemProduto($novaImagem); // upload órfão: o produto não foi gravado
             $erros[] = 'Não foi possível salvar o produto agora. Tente novamente.';
         }
     }
