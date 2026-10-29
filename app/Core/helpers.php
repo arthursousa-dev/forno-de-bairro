@@ -238,6 +238,13 @@ function criarPedido(PDO $pdo, int $usuarioId, string $endereco, string $formaPa
     if (mb_strlen($endereco) < 8) {
         return ['sucesso' => false, 'erro' => 'Informe um endereço de entrega completo.', 'pedido_id' => null, 'total' => null];
     }
+    // Limites das colunas (VARCHAR 255/500): acima disso o INSERT falhava e o cliente via só um erro genérico.
+    if (mb_strlen($endereco) > 255 || mb_strlen((string) $observacoes) > 500) {
+        return ['sucesso' => false, 'erro' => 'Endereço ou observações muito longos.', 'pedido_id' => null, 'total' => null];
+    }
+    // itens_json vem do navegador: descarta entradas que não sejam {id, quantidade} numéricos.
+    $itensCarrinho = array_values(array_filter($itensCarrinho, fn($i) => is_array($i)
+        && isset($i['id'], $i['quantidade']) && is_numeric($i['id']) && is_numeric($i['quantidade'])));
     if (!in_array($formaPagamento, ['dinheiro', 'cartao', 'pix'], true)) {
         return ['sucesso' => false, 'erro' => 'Selecione uma forma de pagamento.', 'pedido_id' => null, 'total' => null];
     }

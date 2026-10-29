@@ -139,4 +139,26 @@ final class CheckoutTest extends TestCase
         $this->assertTrue($resultado['sucesso']);
         $this->assertSame(50 * 25.50, $resultado['total'], 'quantidade deveria ser limitada a 50 unidades');
     }
+
+    public function test_itens_malformados_vindos_do_navegador_sao_descartados(): void
+    {
+        $resultado = criarPedido(
+            $this->pdo, $this->usuarioId, 'Rua das Acácias, 123 - Campo Grande/MS',
+            'pix', null, [42, 'x', ['id' => 'abc', 'quantidade' => 1], ['id' => $this->produtoId, 'quantidade' => 2]]
+        );
+
+        $this->assertTrue($resultado['sucesso']);
+        $this->assertSame(2 * 25.50, $resultado['total']);
+    }
+
+    public function test_endereco_maior_que_a_coluna_e_rejeitado(): void
+    {
+        $resultado = criarPedido(
+            $this->pdo, $this->usuarioId, str_repeat('Rua longa ', 30),
+            'pix', null, [['id' => $this->produtoId, 'quantidade' => 1]]
+        );
+
+        $this->assertFalse($resultado['sucesso']);
+        $this->assertStringContainsString('muito longos', $resultado['erro']);
+    }
 }
